@@ -1,0 +1,20 @@
+.history-table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+}
+
+.history-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+
+.action-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btns .btn {
+  padding: 6px 10px;
+}
