@@ -1,0 +1,209 @@
+/* ClassesPage.css */
+
+.class-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .class-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Class Card */
+.class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.class-card {
+  border-radius: 16px;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.class-card:hover {
+  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
+}
+
+.class-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  cursor: pointer;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.class-card-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.class-color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.class-card-info h3 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+  color: var(--text-primary, #1a1a2e);
+}
+
+.class-subject {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.class-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.class-meta-tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.83rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(102, 126, 234, 0.08);
+  color: #555;
+  white-space: nowrap;
+}
+
+.students-count {
+  background: rgba(46, 213, 115, 0.1);
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.class-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.expand-icon {
+  color: #aaa;
+  display: flex;
+  align-items: center;
+}
+
+/* Students panel */
+.class-students-panel {
+  padding: 0 24px 24px;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  padding-top: 20px;
+}
+
+.student-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.student-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(102, 126, 234, 0.05);
+  border: 1px solid rgba(102, 126, 234, 0.1);
+  position: relative;
+}
+
+.student-chip-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.student-chip-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-chip strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.student-chip span {
+  font-size: 0.82rem;
+  color: #888;
+}
+
+.chip-remove-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.chip-remove-btn:hover {
+  background: rgba(231, 76, 60, 0.1);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  padding: 28px;
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .class-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .class-card-meta {
+    width: 100%;
+  }
+}

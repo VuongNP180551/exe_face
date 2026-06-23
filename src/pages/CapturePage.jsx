@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Webcam from 'react-webcam';
-import { attendanceAPI, studentAPI } from '../services/api';
+import { attendanceAPI, classAPI } from '../services/api';
 import Navbar from '../components/Navbar';
-import { FiCamera, FiUpload, FiRefreshCw, FiCheck, FiX, FiImage } from 'react-icons/fi';
+import { FiCamera, FiUpload, FiRefreshCw, FiCheck, FiX, FiImage, FiPlayCircle } from 'react-icons/fi';
 import './CapturePage.css';
 
 const CapturePage = () => {
@@ -11,22 +11,24 @@ const CapturePage = () => {
   const webcamRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const [mode, setMode] = useState('choose'); // choose, webcam, preview, processing
+  const [mode, setMode] = useState('init'); // init, choose, webcam, preview
+  const [session, setSession] = useState(null); // stores the created session
   const [capturedImage, setCapturedImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [sessionName, setSessionName] = useState('');
   const [classList, setClassList] = useState([]);
-  const [className, setClassName] = useState('');
+  const [classId, setClassId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchClasses = async () => {
       try {
-        const res = await studentAPI.getClasses();
-        if (res.data.classes && res.data.classes.length > 0) {
-          setClassList(res.data.classes);
-          setClassName(res.data.classes[0]);
+        const res = await classAPI.getAll();
+        const classes = Array.isArray(res.data) ? res.data : (res.data.classes || []);
+        if (classes.length > 0) {
+          setClassList(classes);
+          setClassId(classes[0].id);
         }
       } catch (err) {
         console.error('Fetch classes error:', err);
@@ -34,6 +36,24 @@ const CapturePage = () => {
     };
     fetchClasses();
   }, []);
+
+  const handleOpenSession = async () => {
+    if (!classId) {
+      setError('Vui lòng chọn lớp học');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await attendanceAPI.createSession({ classId, sessionName });
+      setSession(res.data.session);
+      setMode('choose');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Có lỗi khi tạo phiên điểm danh.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const capture = useCallback(() => {
     if (webcamRef.current) {
@@ -70,23 +90,20 @@ const CapturePage = () => {
     setMode('webcam');
   };
 
-  const handleSubmit = async () => {
-    if (!imageFile) return;
+  const handleProcessAI = async () => {
+    if (!imageFile || !session) return;
     setLoading(true);
     setError('');
 
     try {
       const formData = new FormData();
       formData.append('image', imageFile);
-      formData.append('sessionName', sessionName || `Điểm danh - ${new Date().toLocaleDateString('vi-VN')}`);
-      formData.append('className', className);
 
-      const res = await attendanceAPI.createSession(formData);
-      navigate(`/attendance/${res.data.session.id}`);
+      await attendanceAPI.processSession(session.id, formData);
+      navigate(`/attendance/${session.id}`);
     } catch (err) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
+      setError(err.response?.data?.message || 'Có lỗi xảy ra trong quá trình xử lý ảnh.');
+      setLoading(false); // only disable loading if error, otherwise it navigates
     }
   };
 
@@ -96,55 +113,69 @@ const CapturePage = () => {
       <div className="page-content">
         <div className="page-header fade-in">
           <h1>📷 Điểm danh bằng khuôn mặt</h1>
-          <p>Chụp ảnh lớp học hoặc tải ảnh lên để AI nhận diện khuôn mặt</p>
+          <p>Tạo phiên và tải ảnh lớp học để AI nhận diện khuôn mặt</p>
         </div>
 
         {error && (
-          <div className="login-error" style={{ marginBottom: 20 }}>
+          <div className="alert-info" style={{ backgroundColor: '#ffecec', color: '#e74c3c', borderColor: '#fadbd8', marginBottom: 20 }}>
             <span>{error}</span>
           </div>
         )}
 
-        {/* Session Info */}
-        <div className="capture-info glass-card fade-in" style={{ animationDelay: '0.1s' }}>
-          <div className="info-row">
-            <div className="input-group">
-              <label>Tên phiên điểm danh</label>
+        {/* Step 1: Open Session */}
+        {mode === 'init' && (
+          <div className="capture-info glass-card fade-in" style={{ animationDelay: '0.1s', maxWidth: '600px', margin: '0 auto' }}>
+            <h3>Bước 1: Mở phiên điểm danh</h3>
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label>Tên phiên điểm danh (Không bắt buộc)</label>
               <input
                 type="text"
                 className="input-field"
-                placeholder="VD: Buổi học sáng thứ 2"
+                placeholder={`VD: Điểm danh - ${new Date().toLocaleDateString('vi-VN')}`}
                 value={sessionName}
                 onChange={(e) => setSessionName(e.target.value)}
               />
             </div>
-            <div className="input-group">
+            <div className="form-group">
               <label>Lớp học</label>
               <select
                 className="select-field"
-                value={className}
-                onChange={(e) => setClassName(e.target.value)}
+                value={classId}
+                onChange={(e) => setClassId(e.target.value)}
               >
                 {classList.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c.id} value={c.id}>{c.className}</option>
                 ))}
               </select>
             </div>
+            <button 
+              className="btn btn-primary btn-block" 
+              onClick={handleOpenSession} 
+              disabled={loading}
+              style={{ marginTop: '1.5rem' }}
+            >
+              {loading ? 'Đang tạo...' : <><FiPlayCircle /> Bắt đầu điểm danh</>}
+            </button>
           </div>
-        </div>
+        )}
 
-        {/* Mode: Choose */}
+        {/* Step 2: Choose Mode */}
         {mode === 'choose' && (
-          <div className="capture-choose fade-in" style={{ animationDelay: '0.2s' }}>
-            <div className="glass-card choose-card" onClick={() => setMode('webcam')}>
-              <div className="choose-icon"><FiCamera /></div>
-              <h3>Chụp ảnh</h3>
-              <p>Sử dụng webcam để chụp ảnh lớp học trực tiếp</p>
-            </div>
-            <div className="glass-card choose-card" onClick={() => fileInputRef.current.click()}>
-              <div className="choose-icon upload"><FiUpload /></div>
-              <h3>Tải ảnh lên</h3>
-              <p>Chọn ảnh có sẵn từ máy tính của bạn</p>
+          <div className="capture-choose fade-in">
+            <h3 style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              Bước 2: Cung cấp ảnh lớp học
+            </h3>
+            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+              <div className="glass-card choose-card" onClick={() => setMode('webcam')}>
+                <div className="choose-icon"><FiCamera /></div>
+                <h3>Chụp ảnh</h3>
+                <p>Sử dụng webcam để chụp ảnh lớp học trực tiếp</p>
+              </div>
+              <div className="glass-card choose-card" onClick={() => fileInputRef.current.click()}>
+                <div className="choose-icon upload"><FiUpload /></div>
+                <h3>Tải ảnh lên</h3>
+                <p>Chọn ảnh có sẵn từ máy tính của bạn</p>
+              </div>
             </div>
             <input
               ref={fileInputRef}
@@ -172,9 +203,6 @@ const CapturePage = () => {
                 }}
                 className="webcam-video"
               />
-              <div className="webcam-overlay">
-                <div className="webcam-frame"></div>
-              </div>
             </div>
             <div className="capture-actions">
               <button className="btn btn-secondary" onClick={() => setMode('choose')}>
@@ -209,7 +237,7 @@ const CapturePage = () => {
               </button>
               <button
                 className="btn btn-success btn-lg"
-                onClick={handleSubmit}
+                onClick={handleProcessAI}
                 disabled={loading}
               >
                 {loading ? (
@@ -219,7 +247,7 @@ const CapturePage = () => {
                   </>
                 ) : (
                   <>
-                    <FiCheck /> Xác nhận & Điểm danh
+                    <FiCheck /> Xác nhận & Xử lý AI
                   </>
                 )}
               </button>
@@ -228,7 +256,7 @@ const CapturePage = () => {
         )}
 
         {/* Processing overlay */}
-        {loading && (
+        {loading && mode === 'preview' && (
           <div className="loading-overlay">
             <div className="processing-animation">
               <div className="processing-circle"></div>

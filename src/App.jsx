@@ -6,6 +6,14 @@ import DashboardPage from './pages/DashboardPage';
 import CapturePage from './pages/CapturePage';
 import AttendancePage from './pages/AttendancePage';
 import HistoryPage from './pages/HistoryPage';
+import ProfilePage from './pages/ProfilePage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import StudentsPage from './pages/StudentsPage';
+import ClassesPage from './pages/ClassesPage';
+import SchedulesPage from './pages/SchedulesPage';
+import RegistrationsPage from './pages/RegistrationsPage';
+import NotificationsPage from './pages/NotificationsPage';
+
 
 function App() {
   return (
@@ -24,7 +32,7 @@ function App() {
           <Route
             path="/capture"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['teacher']}>
                 <CapturePage />
               </ProtectedRoute>
             }
@@ -32,7 +40,7 @@ function App() {
           <Route
             path="/attendance/:sessionId"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['teacher']}>
                 <AttendancePage />
               </ProtectedRoute>
             }
@@ -40,11 +48,19 @@ function App() {
           <Route
             path="/history"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}>
                 <HistoryPage />
               </ProtectedRoute>
             }
           />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsersPage /></ProtectedRoute>} />
+          <Route path="/students" element={<ProtectedRoute allowedRoles={['admin', 'teacher']}><StudentsPage /></ProtectedRoute>} />
+          <Route path="/classes" element={<ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}><ClassesPage /></ProtectedRoute>} />
+          <Route path="/schedules" element={<ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}><SchedulesPage /></ProtectedRoute>} />
+          <Route path="/registrations" element={<ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}><RegistrationsPage /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>

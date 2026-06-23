@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { attendanceAPI } from '../services/api';
 import Navbar from '../components/Navbar';
-import { FiSave, FiArrowLeft, FiCheckCircle, FiXCircle, FiEdit3, FiUsers, FiCalendar } from 'react-icons/fi';
+import { FiSave, FiArrowLeft, FiCheckCircle, FiXCircle, FiUsers, FiCalendar, FiMessageSquare, FiDownload } from 'react-icons/fi';
 import './AttendancePage.css';
 
 const AttendancePage = () => {
@@ -10,73 +10,132 @@ const AttendancePage = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [records, setRecords] = useState([]);
+  const [appeals, setAppeals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [toast, setToast] = useState(null);
-  const [edited, setEdited] = useState(false);
 
-  useEffect(() => {
-    const fetchSession = async () => {
-      try {
-        const res = await attendanceAPI.getSession(sessionId);
-        setSession(res.data.session);
-        setRecords(
-          res.data.session.records.map((r) => ({
-            id: r.id,
-            studentCode: r.student.studentCode,
-            fullName: r.student.fullName,
-            className: r.student.className,
-            status: r.status,
-            note: r.note || '',
-          }))
-        );
-      } catch {
-        setToast({ type: 'error', message: 'Không thể tải dữ liệu phiên điểm danh.' });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSession();
-  }, [sessionId]);
-
-  const toggleStatus = (index) => {
-    const updated = [...records];
-    updated[index].status = updated[index].status === 'present' ? 'absent' : 'present';
-    setRecords(updated);
-    setEdited(true);
-  };
-
-  const updateNote = (index, note) => {
-    const updated = [...records];
-    updated[index].note = note;
-    setRecords(updated);
-    setEdited(true);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
+  const fetchSessionAndAppeals = async () => {
     try {
-      await attendanceAPI.updateSession(sessionId, {
-        records: records.map((r) => ({
+      const [sessionRes, appealsRes] = await Promise.all([
+        attendanceAPI.getSession(sessionId),
+        attendanceAPI.getAppeals()
+      ]);
+      setSession(sessionRes.data.session);
+      setRecords(
+        sessionRes.data.session.records.map((r) => ({
           id: r.id,
+          studentCode: r.student.studentCode,
+          fullName: r.student.fullName,
+          className: r.student.className,
           status: r.status,
-          note: r.note,
-        })),
-        status: 'saved',
-      });
-      setEdited(false);
-      setToast({ type: 'success', message: 'Điểm danh đã được lưu thành công!' });
-      setTimeout(() => setToast(null), 3000);
+          confidence: r.confidence,
+          isManualEdited: r.isManualEdited,
+          note: r.note || '',
+        }))
+      );
+      
+      const filteredAppeals = appealsRes.data.appeals.filter(
+        a => a.attendanceRecord?.sessionId === parseInt(sessionId)
+      );
+      setAppeals(filteredAppeals);
     } catch {
-      setToast({ type: 'error', message: 'Lưu thất bại. Vui lòng thử lại.' });
-      setTimeout(() => setToast(null), 3000);
+      setToast({ type: 'error', message: 'Không thể tải dữ liệu phiên điểm danh.' });
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  const presentCount = records.filter((r) => r.status === 'present').length;
-  const absentCount = records.filter((r) => r.status === 'absent').length;
+  useEffect(() => {
+    fetchSessionAndAppeals();
+  }, [sessionId]);
+
+  const isExpired = session && (Date.now() - new Date(session.createdAt).getTime()) > 24 * 60 * 60 * 1000;
+  const isLocked = session?.status === 'FINALIZED' || isExpired;
+
+  const toggleStatus = async (index) => {
+    if (session?.status === 'FINALIZED') {
+      setToast({ type: 'error', message: 'Phiên này đã chốt sổ, không thể sửa.' });
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
+    if (isExpired) {
+      setToast({ type: 'error', message: 'Đã quá 24 giờ, không thể chỉnh sửa điểm danh.' });
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
+    const updated = [...records];
+    const newStatus = updated[index].status === 'PRESENT' ? 'ABSENT' : 'PRESENT';
+    updated[index].status = newStatus;
+    updated[index].isManualEdited = true;
+    setRecords(updated);
+
+    try {
+      await attendanceAPI.updateRecord(sessionId, updated[index].id, {
+        status: newStatus,
+        note: updated[index].note
+      });
+    } catch {
+      setToast({ type: 'error', message: 'Sửa trạng thái thất bại.' });
+      fetchSessionAndAppeals(); // revert
+    }
+  };
+
+  const handleFinalize = async () => {
+    setFinalizing(true);
+    try {
+      await attendanceAPI.finalizeSession(sessionId);
+      setToast({ type: 'success', message: 'Đã chốt sổ điểm danh thành công!' });
+      setTimeout(() => setToast(null), 3000);
+      fetchSessionAndAppeals();
+    } catch {
+      setToast({ type: 'error', message: 'Chốt sổ thất bại. Vui lòng thử lại.' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setFinalizing(false);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    setExporting(true);
+    try {
+      const res = await attendanceAPI.exportSession(sessionId);
+      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `attendance_${sessionId}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setToast({ type: 'success', message: 'Xuất CSV thành công!' });
+      setTimeout(() => setToast(null), 3000);
+    } catch {
+      setToast({ type: 'error', message: 'Xuất CSV thất bại. Vui lòng thử lại.' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleApproveAppeal = async (appealId, status) => {
+    try {
+      await attendanceAPI.updateAppeal(appealId, { status });
+      setToast({ type: 'success', message: `Đã ${status === 'APPROVED' ? 'duyệt' : 'từ chối'} khiếu nại.` });
+      setTimeout(() => setToast(null), 3000);
+      fetchSessionAndAppeals();
+    } catch {
+      setToast({ type: 'error', message: 'Lỗi khi xử lý khiếu nại.' });
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+
+  const presentCount = records.filter((r) => r.status === 'PRESENT').length;
+  const absentCount = records.filter((r) => r.status === 'ABSENT').length;
 
   if (loading) {
     return (
@@ -93,18 +152,39 @@ const AttendancePage = () => {
     <div className="page-container">
       <Navbar />
       <div className="page-content">
-        {/* Toast */}
         {toast && (
           <div className={`toast toast-${toast.type}`}>
             {toast.type === 'success' ? <FiCheckCircle /> : <FiXCircle />} {toast.message}
           </div>
         )}
 
+        {/* 24-hour expired warning */}
+        {isExpired && session?.status !== 'FINALIZED' && (
+          <div
+            className="fade-in"
+            style={{
+              background: 'rgba(243, 156, 18, 0.12)',
+              border: '1px solid rgba(243, 156, 18, 0.4)',
+              borderRadius: 10,
+              padding: '12px 18px',
+              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              color: '#f39c12',
+              fontSize: '0.92rem',
+              fontWeight: 500,
+            }}
+          >
+            ⏰ Đã quá 24 giờ - Không thể chỉnh sửa điểm danh
+          </div>
+        )}
+
         {/* Header */}
         <div className="attendance-header fade-in">
           <div className="header-left">
-            <button className="btn btn-secondary btn-sm" onClick={() => navigate('/dashboard')}>
-              <FiArrowLeft /> Quay lại
+            <button className="btn btn-secondary btn-sm" onClick={() => navigate('/history')}>
+              <FiArrowLeft /> Lịch sử
             </button>
             <div>
               <h1>{session?.sessionName}</h1>
@@ -112,25 +192,29 @@ const AttendancePage = () => {
                 <FiCalendar /> {session && new Date(session.date).toLocaleDateString('vi-VN')}
                 <span className="meta-separator">•</span>
                 <FiUsers /> {records.length} sinh viên
+                <span className="meta-separator">•</span>
+                Trạng thái: <strong>{session?.status}</strong>
               </p>
             </div>
           </div>
-          <button
-            className="btn btn-success btn-lg"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? (
-              <>
-                <div className="loader" style={{ width: 20, height: 20, borderWidth: 2 }}></div>
-                Đang lưu...
-              </>
-            ) : (
-              <>
-                <FiSave /> Lưu điểm danh
-              </>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              className="btn btn-secondary btn-lg"
+              onClick={handleExportCSV}
+              disabled={exporting}
+            >
+              {exporting ? 'Đang xuất...' : <>📥 Xuất CSV</>}
+            </button>
+            {session?.status !== 'FINALIZED' && (
+              <button
+                className="btn btn-success btn-lg"
+                onClick={handleFinalize}
+                disabled={finalizing}
+              >
+                {finalizing ? 'Đang xử lý...' : <><FiSave /> Chốt sổ điểm danh</>}
+              </button>
             )}
-          </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -155,11 +239,35 @@ const AttendancePage = () => {
           </div>
         </div>
 
-        {/* Info banner */}
-        {edited && (
-          <div className="edit-banner fade-in">
-            <FiEdit3 />
-            <span>Bạn đã chỉnh sửa danh sách. Nhấn <strong>"Lưu điểm danh"</strong> để lưu thay đổi.</span>
+        {/* Appeals Section */}
+        {appeals.length > 0 && (
+          <div className="glass-card fade-in" style={{ marginBottom: '20px', animationDelay: '0.15s', borderLeft: '4px solid #f39c12' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiMessageSquare /> Khiếu nại từ sinh viên</h3>
+            <div style={{ display: 'grid', gap: '15px', marginTop: '15px' }}>
+              {appeals.map(appeal => (
+                <div key={appeal.id} style={{ padding: '15px', background: '#fff', borderRadius: '8px', border: '1px solid #eee' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <div>
+                      <strong>{appeal.student?.fullName}</strong> ({appeal.student?.studentCode})
+                      <p style={{ margin: '8px 0', color: '#555' }}>Lý do: {appeal.reason}</p>
+                      {appeal.evidenceUrl && (
+                        <a href={`http://localhost:5000${appeal.evidenceUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.9rem', color: '#3498db' }}>
+                          Xem minh chứng
+                        </a>
+                      )}
+                    </div>
+                    {appeal.status === 'PENDING' ? (
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button className="btn btn-success btn-sm" onClick={() => handleApproveAppeal(appeal.id, 'APPROVED')}>Duyệt (Có mặt)</button>
+                        <button className="btn btn-danger btn-sm" onClick={() => handleApproveAppeal(appeal.id, 'REJECTED')}>Từ chối</button>
+                      </div>
+                    ) : (
+                      <span className={`badge badge-${appeal.status.toLowerCase()}`}>{appeal.status}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -172,8 +280,8 @@ const AttendancePage = () => {
                 <th>MSSV</th>
                 <th>Họ & Tên</th>
                 <th>Lớp</th>
+                <th>AI Confidence</th>
                 <th>Trạng thái</th>
-                <th>Ghi chú</th>
               </tr>
             </thead>
             <tbody>
@@ -184,26 +292,23 @@ const AttendancePage = () => {
                   <td>{record.fullName}</td>
                   <td>{record.className}</td>
                   <td>
+                    {record.confidence ? `${record.confidence.toFixed(1)}%` : 'N/A'}
+                    {record.isManualEdited && <span style={{ marginLeft: 8, fontSize: '0.8rem', color: '#f39c12' }}>(Sửa tay)</span>}
+                  </td>
+                  <td>
                     <button
-                      className={`badge badge-${record.status} status-toggle`}
+                      className={`badge badge-${record.status.toLowerCase()} status-toggle`}
                       onClick={() => toggleStatus(index)}
                       title="Nhấn để thay đổi trạng thái"
+                      disabled={isLocked}
+                      style={{ cursor: isLocked ? 'default' : 'pointer' }}
                     >
-                      {record.status === 'present' ? (
+                      {record.status === 'PRESENT' ? (
                         <><FiCheckCircle /> Có mặt</>
                       ) : (
                         <><FiXCircle /> Vắng</>
                       )}
                     </button>
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      className="note-input"
-                      placeholder="Thêm ghi chú..."
-                      value={record.note}
-                      onChange={(e) => updateNote(index, e.target.value)}
-                    />
                   </td>
                 </tr>
               ))}
