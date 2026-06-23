@@ -265,7 +265,7 @@ const ClassesPage = () => {
                           {studentsInClass.map(s => (
                             <div key={s.id} className="student-chip">
                               <div className="student-chip-avatar">
-                                {s.avatar ? <img src={`http://localhost:5000${s.avatar}`} alt="" /> : s.fullName?.charAt(0)}
+                                {s.avatar ? <img src={`https://face-attendance-api-gfyd.onrender.com${s.avatar}`} alt="" /> : s.fullName?.charAt(0)}
                               </div>
                               <div>
                                 <strong>{s.fullName}</strong>
@@ -316,7 +316,7 @@ const ClassesPage = () => {
                     <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#667eea', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
-                          {s.avatar ? <img src={`http://localhost:5000${s.avatar}`} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} /> : s.fullName?.charAt(0)}
+                          {s.avatar ? <img src={`https://face-attendance-api-gfyd.onrender.com${s.avatar}`} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} /> : s.fullName?.charAt(0)}
                         </div>
                         <div>
                           <strong>{s.fullName}</strong>

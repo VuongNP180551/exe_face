@@ -251,7 +251,7 @@ const AttendancePage = () => {
                       <strong>{appeal.student?.fullName}</strong> ({appeal.student?.studentCode})
                       <p style={{ margin: '8px 0', color: '#555' }}>Lý do: {appeal.reason}</p>
                       {appeal.evidenceUrl && (
-                        <a href={`http://localhost:5000${appeal.evidenceUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.9rem', color: '#3498db' }}>
+                        <a href={`https://face-attendance-api-gfyd.onrender.com${appeal.evidenceUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.9rem', color: '#3498db' }}>
                           Xem minh chứng
                         </a>
                       )}

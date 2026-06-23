@@ -106,7 +106,7 @@ const ProfilePage = () => {
                 <div className="avatar-section">
                   <div className="avatar-preview">
                     {user?.avatar ? (
-                      <img src={`http://localhost:5000${user.avatar}`} alt="Avatar" />
+                      <img src={`https://face-attendance-api-gfyd.onrender.com${user.avatar}`} alt="Avatar" />
                     ) : (
                       <FiUser size={48} />
                     )}
@@ -127,7 +127,7 @@ const ProfilePage = () => {
                     <div className="face-gallery" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '1rem' }}>
                       {faceDataList.map(fd => (
                         <div key={fd.id} className="face-item" style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden' }}>
-                          <img src={`http://localhost:5000${fd.faceImageUrl}`} alt="Face" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={`https://face-attendance-api-gfyd.onrender.com${fd.faceImageUrl}`} alt="Face" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           <button 
                             className="btn-delete-face" 
                             onClick={() => handleDeleteFaceData(fd.id)}

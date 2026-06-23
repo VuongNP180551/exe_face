@@ -185,7 +185,7 @@ const StudentsPage = () => {
                       <td>{i + 1}</td>
                       <td>
                         <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #667eea, #764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>
-                          {s.avatar ? <img src={`http://localhost:5000${s.avatar}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <FiUser />}
+                          {s.avatar ? <img src={`https://face-attendance-api-gfyd.onrender.com${s.avatar}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <FiUser />}
                         </div>
                       </td>
                       <td><strong>{s.studentCode}</strong></td>
