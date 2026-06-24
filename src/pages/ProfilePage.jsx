@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { userAPI, studentAPI } from '../services/api';
+import { userAPI, studentAPI, SERVER_BASE_URL } from '../services/api';
 import Navbar from '../components/Navbar';
 import { FiUser, FiMail, FiCamera, FiSave, FiTrash2, FiImage } from 'react-icons/fi';
 import './ProfilePage.css';
@@ -106,7 +106,7 @@ const ProfilePage = () => {
                 <div className="avatar-section">
                   <div className="avatar-preview">
                     {user?.avatar ? (
-                      <img src={`http://localhost:5000${user.avatar}`} alt="Avatar" />
+                      <img src={`${SERVER_BASE_URL}${user.avatar}`} alt="Avatar" />
                     ) : (
                       <FiUser size={48} />
                     )}
@@ -127,7 +127,7 @@ const ProfilePage = () => {
                     <div className="face-gallery" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '1rem' }}>
                       {faceDataList.map(fd => (
                         <div key={fd.id} className="face-item" style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden' }}>
-                          <img src={`http://localhost:5000${fd.faceImageUrl}`} alt="Face" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={`${SERVER_BASE_URL}${fd.faceImageUrl}`} alt="Face" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           <button 
                             className="btn-delete-face" 
                             onClick={() => handleDeleteFaceData(fd.id)}

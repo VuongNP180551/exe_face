@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { attendanceAPI } from '../services/api';
+import { attendanceAPI, SERVER_BASE_URL } from '../services/api';
 import Navbar from '../components/Navbar';
 import { FiSave, FiArrowLeft, FiCheckCircle, FiXCircle, FiUsers, FiCalendar, FiMessageSquare, FiDownload } from 'react-icons/fi';
 import './AttendancePage.css';
@@ -251,7 +251,7 @@ const AttendancePage = () => {
                       <strong>{appeal.student?.fullName}</strong> ({appeal.student?.studentCode})
                       <p style={{ margin: '8px 0', color: '#555' }}>Lý do: {appeal.reason}</p>
                       {appeal.evidenceUrl && (
-                        <a href={`http://localhost:5000${appeal.evidenceUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.9rem', color: '#3498db' }}>
+                        <a href={`${SERVER_BASE_URL}${appeal.evidenceUrl}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.9rem', color: '#3498db' }}>
                           Xem minh chứng
                         </a>
                       )}
