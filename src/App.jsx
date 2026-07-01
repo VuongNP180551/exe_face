@@ -13,6 +13,7 @@ import ClassesPage from './pages/ClassesPage';
 import SchedulesPage from './pages/SchedulesPage';
 import RegistrationsPage from './pages/RegistrationsPage';
 import NotificationsPage from './pages/NotificationsPage';
+import LandingPage from './pages/LandingPage';
 
 
 function App() {
@@ -61,7 +62,8 @@ function App() {
           <Route path="/registrations" element={<ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}><RegistrationsPage /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
