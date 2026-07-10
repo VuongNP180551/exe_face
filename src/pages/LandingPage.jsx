@@ -253,7 +253,7 @@ const LandingPage = () => {
           <div className="footer-links">
             <h4>Hỗ trợ kỹ thuật</h4>
             <ul>
-              <li><a href="mailto:support@faceattendance.duckdns.org">support@faceattendance.duckdns.org</a></li>
+              <li><a href="mailto:faceattendance410@gmail.com">faceattendance410@gmail.com</a></li>
               <li><a href="#landing-top" onClick={(e) => { e.preventDefault(); scrollToSection('landing-top'); }}>Về đầu trang</a></li>
             </ul>
           </div>
